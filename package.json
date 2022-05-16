@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/ArnaudBuchholz/media-time#readme",
   "dependencies": {
-    "exif-parser": "^0.1.12",
+    "exiftool-vendored": "^16.4.0",
     "utimes": "^5.1.1"
   }
 }
