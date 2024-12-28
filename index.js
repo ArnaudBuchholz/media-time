@@ -5,14 +5,15 @@ const { exiftool } = require("exiftool-vendored")
 
 async function main (folder) {
   const files = await readdir(folder)
-  for await (file of files) {
+  for (file of files) {
     const extension = extname(file).toLowerCase()
     const filePath = join(folder, file)
-    if (['.jpg', '.mov'].includes(extension)) {
+    if (['.jpg', '.mov', '.heic'].includes(extension)) {
       try {
         const tags = await exiftool.read(filePath)
         let tagName = {
           '.jpg': 'DateTimeOriginal',
+          '.heic': 'DateTimeOriginal',
           '.mov': 'MediaCreateDate'
         }[extension]
         const exifDate = tags[tagName]
@@ -35,6 +36,8 @@ async function main (folder) {
       }
     }
   }
+  await exiftool.end();
+  console.log('done.')
 }
 
 main(...process.argv.slice(2))
