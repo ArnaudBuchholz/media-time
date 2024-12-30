@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "standard --fix"
   },
   "repository": {
     "type": "git",
@@ -19,5 +19,8 @@
   "dependencies": {
     "exiftool-vendored": "^29.0.0",
     "utimes": "^5.2.1"
+  },
+  "devDependencies": {
+    "standard": "^17.1.2"
   }
 }
