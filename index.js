@@ -24,9 +24,10 @@ async function main (...argv) {
       const extension = extname(file).toLowerCase()
       const filePath = join(folder, file)
       const tagName = EXIF_TAG_PER_EXTENSION[extension];
+      let tags
       if (tagName !== undefined) {
         try {
-          const tags = await exiftool.read(filePath)
+          tags = await exiftool.read(filePath)
           const exifDate = tags[tagName]
           if (tagName === 'MediaCreateDate') {
             exifDate.minute += exifDate.tzoffsetMinutes
@@ -45,6 +46,9 @@ async function main (...argv) {
         } catch (e) {
           ++errors
           console.log('💣', file, e)
+          if (tags) {
+            console.log(tags)
+          }
         }
       } else {
         console.log('❓', file)
