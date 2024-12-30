@@ -1,43 +1,61 @@
-const { readdir } = require('fs/promises')
-const { extname, join } = require('path')
+const { readdir } = require('node:fs/promises')
+const { extname, join } = require('node:path')
+const readline = require('node:readline/promises')
+const { stdin: input, stdout: output } = require('node:process')
 const { utimes } = require('utimes')
-const { exiftool } = require("exiftool-vendored")
+const { exiftool } = require('exiftool-vendored')
 
-async function main (folder) {
-  const files = await readdir(folder)
-  for (file of files) {
-    const extension = extname(file).toLowerCase()
-    const filePath = join(folder, file)
-    if (['.jpg', '.mov', '.heic'].includes(extension)) {
-      try {
-        const tags = await exiftool.read(filePath)
-        let tagName = {
-          '.jpg': 'DateTimeOriginal',
-          '.heic': 'DateTimeOriginal',
-          '.mov': 'MediaCreateDate'
-        }[extension]
-        const exifDate = tags[tagName]
-        if (extension === '.mov') {
-          exifDate.minute += exifDate.tzoffsetMinutes // Bug ?
+const rl = readline.createInterface({ input, output })
+
+const EXIF_TAG_PER_EXTENSION = {
+  '.jpg': 'DateTimeOriginal',
+  '.heic': 'DateTimeOriginal',
+  '.mov': 'MediaCreateDate',
+  '.mp4': 'MediaCreateDate'
+};
+
+async function main (...argv) {
+  let errors = 0
+  const folders = argv.filter(arg => !arg.startsWith('--'))
+  for (const folder of folders) {
+    const files = await readdir(folder)
+    for (const file of files) {
+      const extension = extname(file).toLowerCase()
+      const filePath = join(folder, file)
+      const tagName = EXIF_TAG_PER_EXTENSION[extension];
+      if (tagName !== undefined) {
+        try {
+          const tags = await exiftool.read(filePath)
+          const exifDate = tags[tagName]
+          if (tagName === 'MediaCreateDate') {
+            exifDate.minute += exifDate.tzoffsetMinutes
+          }
+          const localDate = new Date(
+            exifDate.year, exifDate.month - 1, exifDate.day,
+            exifDate.hour, exifDate.minute, exifDate.second, 0
+          )
+          console.log(file, localDate.toLocaleString())
+          const time = localDate.getTime()
+          await utimes(filePath, {
+            btime: time,
+            mtime: time,
+            atime: time
+          })
+        } catch (e) {
+          ++errors
+          console.log('💣', file, e)
         }
-        const localDate = new Date(
-          exifDate.year, exifDate.month - 1, exifDate.day,
-          exifDate.hour, exifDate.minute, exifDate.second, 0
-        )
-        console.log(file, localDate.toLocaleString())
-        const time = localDate.getTime()
-        await utimes(filePath, {
-          btime: time,
-          mtime: time,
-          atime: time
-        })
-      } catch (e) {
-        console.log(file, e)
+      } else {
+        console.log('❓', file)
       }
     }
   }
-  await exiftool.end();
-  console.log('done.')
+  await exiftool.end()
+  console.log('✔ done.')
+  if (errors) {
+    await rl.question('Please review the problems...')
+  }
+  rl.close()
 }
 
 main(...process.argv.slice(2))
