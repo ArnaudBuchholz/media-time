@@ -18,6 +18,7 @@ async function main (...argv) {
   let errors = 0
   const folders = argv.filter(arg => !arg.startsWith('--'))
   for (const folder of folders) {
+    console.log('📂', folder)
     const files = await readdir(folder)
     for (const file of files) {
       const extension = extname(file).toLowerCase()
